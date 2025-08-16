@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_FILE_PATH="$HOME/.config/nt/config"
+DEFAULT_NOTES_FILE_PATH="$HOME/daybook.txt"
+DEFAULT_DATETIME_FORMAT_PATTERN="%H:%M - %-m/%-d/%y"
+
+NOTES_FILE_PATH=""
+DATETIME_FORMAT_PATTERN=""
+
+print_usage() {
+  cat <<EOF
+Usage:
+  nt <note text>
+  nt -p [N]
+  nt --config-path
+  nt -h | --help
+EOF
+}
+
+trim_whitespace() {
+  printf '%s' "$(echo "$1" | awk '{gsub(/^[ \t\r\n]+|[ \t\r\n]+$/,"" );print}')"
+}
+
+parse_config_file() {
+  [ -f "$CONFIG_FILE_PATH" ] || return 0
+  local raw_line line key value
+  while IFS= read -r raw_line || [ -n "$raw_line" ]; do
+    line=$(trim_whitespace "$raw_line")
+    [ -z "$line" ] && continue
+    case "$line" in \#*) continue ;; esac
+    case "$line" in
+      *=*)
+        key=$(trim_whitespace "${line%%=*}")
+        value=$(trim_whitespace "${line#*=}")
+        if [[ $value == \"*\" && $value == *\" ]]; then value=${value:1:-1}; elif [[ $value == '*'* && $value == *'*' ]]; then value=${value:1:-1}; fi
+        case "$key" in
+          note_file) NOTES_FILE_PATH="$value" ;;
+          datetime_format) DATETIME_FORMAT_PATTERN="$value" ;;
+        esac
+        ;;
+    esac
+  done < "$CONFIG_FILE_PATH"
+}
+
+expand_leading_tilde() {
+  case "$1" in
+    ~/*) printf '%s\n' "${1/#\~/$HOME}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+finalize_runtime_settings() {
+  NOTES_FILE_PATH="${NOTES_FILE_PATH:-$DEFAULT_NOTES_FILE_PATH}"
+  DATETIME_FORMAT_PATTERN="${DATETIME_FORMAT_PATTERN:-$DEFAULT_DATETIME_FORMAT_PATTERN}"
+  NOTES_FILE_PATH="$(expand_leading_tilde "$NOTES_FILE_PATH")"
+  mkdir -p "$(dirname "$NOTES_FILE_PATH")"
+}
+
+format_timestamp() {
+  date +"$DATETIME_FORMAT_PATTERN" 2>/dev/null || return 1
+}
+
+show_recent_entries() {
+  local count="${1:-10}"
+  [[ $count =~ ^[0-9]+$ ]] || { echo "nt: count must be integer" >&2; exit 1; }
+  [ -f "$NOTES_FILE_PATH" ] || { echo "nt: no note file at $NOTES_FILE_PATH" >&2; exit 1; }
+  tail -n "$count" "$NOTES_FILE_PATH"
+}
+
+append_note_entry() {
+  local ts
+  ts="$(format_timestamp)" || { echo "nt: invalid datetime_format '$DATETIME_FORMAT_PATTERN'" >&2; exit 1; }
+  local entry="[$ts] $*"
+  printf '%s\n' "$entry" >> "$NOTES_FILE_PATH"
+  printf '%s\n' "$entry"
+}
+
+main() {
+  [ $# -gt 0 ] || { print_usage >&2; exit 1; }
+  parse_config_file
+  finalize_runtime_settings
+  case "$1" in
+    -h|--help) print_usage; exit 0 ;;
+    --config-path) printf '%s\n' "$CONFIG_FILE_PATH"; exit 0 ;;
+    -p) shift; show_recent_entries "${1:-10}"; exit 0 ;;
+    --) shift ;;
+  esac
+  [ $# -gt 0 ] || { echo "nt: nothing to record" >&2; exit 1; }
+  append_note_entry "$@"
+}
+
+main "$@"
