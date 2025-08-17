@@ -8,7 +8,7 @@ pub struct Cli {
     pub print: Option<Option<usize>>,
     #[arg(long = "config-path", value_name = "PATH")]
     pub config_path: Option<PathBuf>,
-    #[arg(short = 'i', long = "interactive", action = ArgAction::SetTrue, help = "enter interactive per-line note mode (Ctrl-D to finish)")]
+    #[arg(short = 'i', long = "interactive", action = ArgAction::SetTrue, help = "enter interactive single-line mode (press Enter to submit)")]
     pub interactive: bool,
     #[arg(value_name = "NOTE", trailing_var_arg = true)]
     pub note: Vec<String>,

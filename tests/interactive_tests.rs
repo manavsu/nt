@@ -30,27 +30,25 @@ fn temp_config_file(note_file: &std::path::Path) -> (tempfile::NamedTempFile, st
 }
 
 #[test]
-fn interactive_adds_each_nonblank_line_with_timestamp_and_preserves_trailing_spaces() {
+fn interactive_single_line_adds_one_note_and_stops() {
     let tmp_dir = TempDir::new().unwrap();
     let note_file = tmp_dir.path().join("notes.txt");
-    // Simulate three lines, with one blank and trailing spaces on second
-    let input = b"first line\n   \nsecond line  \n"; // trailing two spaces
+    let input = b"single line entry  \nsecond should be ignored\n"; // second line ignored due to single-line mode
     let mut cursor = Cursor::new(&input[..]);
-    let clock = SeqClock::new(vec!["T1", "T2"]);
+    let clock = SeqClock::new(vec!["T1"]);
     let outcome = run_interactive_session(&mut cursor, Vec::new(), false, &clock, "%Y-%m-%d %H:%M", &note_file).unwrap();
-    match outcome { InteractiveOutcome::Added(n) => assert_eq!(n, 2), _ => panic!("expected Added") }
+    match outcome { InteractiveOutcome::Added(n) => assert_eq!(n, 1), _ => panic!("expected Added(1)") }
     let contents = fs::read_to_string(&note_file).unwrap();
     let lines: Vec<&str> = contents.lines().collect();
-    assert_eq!(lines.len(), 2);
-    assert_eq!(lines[0], "T1 first line");
-    assert_eq!(lines[1], "T2 second line  "); // trailing spaces preserved
+    assert_eq!(lines.len(), 1);
+    assert_eq!(lines[0], "T1 single line entry  "); // trailing spaces preserved
 }
 
 #[test]
-fn interactive_ignores_only_blank_lines_and_returns_empty() {
+fn interactive_blank_line_returns_empty() {
     let tmp_dir = TempDir::new().unwrap();
     let note_file = tmp_dir.path().join("notes.txt");
-    let input = b"   \n\n\t\n"; // all whitespace
+    let input = b"   \nrest ignored"; // whitespace first line => empty
     let mut cursor = Cursor::new(&input[..]);
     let clock = SeqClock::new(vec!["T1"]);
     let outcome = run_interactive_session(&mut cursor, Vec::new(), false, &clock, "%Y-%m-%d %H:%M", &note_file).unwrap();
