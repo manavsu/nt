@@ -9,7 +9,6 @@ fn fake_home() -> PathBuf {
     PathBuf::from("/home/testuser")
 }
 
-// Helper to construct a RuntimeConfig from a TOML snippet by manually parsing just the supported fields.
 fn build_runtime_config_from_test_toml_manual_parse(toml_str: &str) -> RuntimeConfig {
     let mut note_file_literal: Option<String> = None;
     let mut datetime_format: Option<String> = None;
@@ -32,7 +31,6 @@ fn build_runtime_config_from_test_toml_manual_parse(toml_str: &str) -> RuntimeCo
         note_file_literal.unwrap_or_else(|| DEFAULT_NOTE_FILE_LITERAL.to_string()),
         datetime_format.unwrap_or_else(|| DEFAULT_DATETIME_FORMAT_PATTERN.to_string()),
         &home,
-        false,
     )
     .unwrap()
 }

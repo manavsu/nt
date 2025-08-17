@@ -74,17 +74,9 @@ impl RuntimeConfig {
         note_file_literal: String,
         datetime_format_pattern: String,
         home_directory: &Path,
-        create_parent_dir: bool,
     ) -> Result<Self, ConfigLoadSaveError> {
         let expanded_note_file_path =
             expand_leading_tilde_literal(&note_file_literal, home_directory);
-        if create_parent_dir {
-            if let Some(parent_directory) = expanded_note_file_path.parent() {
-                if !parent_directory.as_os_str().is_empty() {
-                    fs::create_dir_all(parent_directory)?;
-                }
-            }
-        }
         Ok(RuntimeConfig {
             configured_note_file_literal: note_file_literal,
             expanded_note_file_path,
@@ -123,7 +115,6 @@ impl RuntimeConfig {
                 .datetime_format
                 .unwrap_or_else(|| DEFAULT_DATETIME_FORMAT_PATTERN.to_string()),
             &home_directory,
-            true,
         )
     }
 }
