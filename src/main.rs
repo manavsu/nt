@@ -44,9 +44,14 @@ fn main() {
             }
         }
         CommandAction::Print { count } => {
-            match nt::notes::collect_last_n_lines_from_file_allow_missing(&cfg.expanded_note_file_path, count) {
+            match nt::notes::collect_last_n_lines_from_file_allow_missing(
+                &cfg.expanded_note_file_path,
+                count,
+            ) {
                 Ok(Some(lines)) => {
-                    for l in lines { println!("{l}"); }
+                    for l in lines {
+                        println!("{l}");
+                    }
                 }
                 Ok(None) => {
                     println!("no notes have been made");
@@ -56,6 +61,6 @@ fn main() {
                     std::process::exit(1);
                 }
             }
-        },
+        }
     }
 }

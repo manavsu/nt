@@ -1,4 +1,4 @@
-use std::{process::Command, fs, path::PathBuf};
+use std::{fs, path::PathBuf, process::Command};
 use tempfile::TempDir;
 
 // Integration test: run binary pointing at a config whose note file does not exist.
@@ -19,7 +19,14 @@ fn print_when_file_missing_shows_friendly_message() {
         .output()
         .expect("failed to run nt binary");
 
-    assert!(output.status.success(), "expected success exit, got {:?}", output.status);
+    assert!(
+        output.status.success(),
+        "expected success exit, got {:?}",
+        output.status
+    );
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("no notes have been made"), "stdout was: {stdout}");
+    assert!(
+        stdout.contains("no notes have been made"),
+        "stdout was: {stdout}"
+    );
 }

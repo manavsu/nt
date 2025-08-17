@@ -19,5 +19,7 @@ pub struct FixedClock {
 
 #[cfg(test)]
 impl Clock for FixedClock {
-    fn now_formatted(&self, _pattern: &str) -> String { self.formatted.clone() }
+    fn now_formatted(&self, _pattern: &str) -> String {
+        self.formatted.clone()
+    }
 }

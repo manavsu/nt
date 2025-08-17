@@ -1,5 +1,5 @@
-use nt::cli::{Cli};
 use clap::Parser;
+use nt::cli::Cli;
 
 #[test]
 fn parse_print_default_count() {
