@@ -1,4 +1,4 @@
-use clap::{Parser, error::ErrorKind};
+use clap::{Parser, ArgAction, error::ErrorKind};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -8,6 +8,8 @@ pub struct Cli {
     pub print: Option<Option<usize>>,
     #[arg(long = "config-path", value_name = "PATH")]
     pub config_path: Option<PathBuf>,
+    #[arg(short = 'i', long = "interactive", action = ArgAction::SetTrue, help = "enter interactive per-line note mode (Ctrl-D to finish)")]
+    pub interactive: bool,
     #[arg(value_name = "NOTE", trailing_var_arg = true)]
     pub note: Vec<String>,
 }
@@ -16,11 +18,28 @@ pub enum CommandAction {
     Append { text: String },
     Print { count: usize },
     AppendFromStdin,
+    InteractiveAppend,
 }
 
 impl Cli {
     pub fn parse_action() -> Result<(Self, CommandAction), clap::Error> {
         let cli = Cli::parse();
+        // Handle explicit interactive flag first
+        if cli.interactive {
+            if let Some(_) = &cli.print {
+                return Err(clap::Error::raw(
+                    ErrorKind::ArgumentConflict,
+                    "cannot mix --interactive with --print/-p",
+                ));
+            }
+            if !cli.note.is_empty() {
+                return Err(clap::Error::raw(
+                    ErrorKind::ArgumentConflict,
+                    "cannot supply note text with --interactive",
+                ));
+            }
+            return Ok((cli, CommandAction::InteractiveAppend));
+        }
         if let Some(opt) = &cli.print {
             if !cli.note.is_empty() {
                 return Err(clap::Error::raw(
@@ -48,10 +67,8 @@ impl Cli {
             // Use std::io::IsTerminal (stable) to detect interactive terminal.
             use std::io::IsTerminal;
             if std::io::stdin().is_terminal() {
-                return Err(clap::Error::raw(
-                    ErrorKind::MissingRequiredArgument,
-                    "supply note text or use --print",
-                ));
+                // Automatic interactive mode (no args, stdin is TTY)
+                return Ok((cli, CommandAction::InteractiveAppend));
             } else {
                 return Ok((cli, CommandAction::AppendFromStdin));
             }
