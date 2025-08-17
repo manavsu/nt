@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use nt::config::{
     DEFAULT_DATETIME_FORMAT_PATTERN, DEFAULT_NOTE_FILE_LITERAL, RuntimeConfig,
-    serialize_diff_from_default,
+    expand_leading_tilde_literal, serialize_diff_from_default,
 };
 
 fn fake_home() -> PathBuf {
@@ -96,4 +96,38 @@ fn round_trips_config_by_serializing_and_reparsing() {
         reparsed.datetime_format_pattern,
         initial.datetime_format_pattern
     );
+}
+
+fn home() -> PathBuf {
+    PathBuf::from("/home/testuser")
+}
+
+#[test]
+fn expands_when_literal_starts_with_tilde_slash() {
+    let expanded = expand_leading_tilde_literal("~/notes/log.txt", &home());
+    assert_eq!(expanded, PathBuf::from("/home/testuser/notes/log.txt"));
+}
+
+#[test]
+fn expands_root_home_directory_when_literal_is_just_tilde_slash() {
+    let expanded = expand_leading_tilde_literal("~/", &home());
+    assert_eq!(expanded, PathBuf::from("/home/testuser"));
+}
+
+#[test]
+fn leaves_user_form_unchanged() {
+    let expanded = expand_leading_tilde_literal("~other/file.txt", &home());
+    assert_eq!(expanded, PathBuf::from("~other/file.txt"));
+}
+
+#[test]
+fn leaves_relative_path_unchanged() {
+    let expanded = expand_leading_tilde_literal("relative/file.txt", &home());
+    assert_eq!(expanded, PathBuf::from("relative/file.txt"));
+}
+
+#[test]
+fn leaves_absolute_path_unchanged() {
+    let expanded = expand_leading_tilde_literal("/var/log/syslog", &home());
+    assert_eq!(expanded, PathBuf::from("/var/log/syslog"));
 }
