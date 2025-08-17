@@ -1,8 +1,8 @@
 use nt::cli::{Cli, CommandAction};
 use nt::config::RuntimeConfig;
+use nt::interactive::{InteractiveOutcome, run_interactive_session};
 use nt::notes::append_note_line_to_file_with_clock;
 use nt::time::SystemClock;
-use nt::interactive::{run_interactive_session, InteractiveOutcome};
 use std::io::Read;
 
 fn main() {
@@ -43,6 +43,8 @@ fn main() {
             ) {
                 eprintln!("write error: {e}");
                 std::process::exit(1);
+            } else {
+                println!("added 1 note");
             }
         }
         CommandAction::Print { count } => {
@@ -84,10 +86,12 @@ fn main() {
             ) {
                 eprintln!("write error: {e}");
                 std::process::exit(1);
+            } else {
+                println!("added 1 note");
             }
         }
         CommandAction::InteractiveAppend => {
-            use std::io::{stdin, stdout, BufReader, IsTerminal};
+            use std::io::{BufReader, IsTerminal, stdin, stdout};
             let clock = SystemClock;
             let mut reader = BufReader::new(stdin());
             let prompt_enabled = stdout().is_terminal();
