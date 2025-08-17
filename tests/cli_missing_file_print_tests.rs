@@ -1,7 +1,6 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, process::Command};
 use tempfile::TempDir;
 
-// Integration test: run binary pointing at a config whose note file does not exist.
 #[test]
 fn print_when_file_missing_shows_friendly_message() {
     let tmp = TempDir::new().expect("tempdir");
