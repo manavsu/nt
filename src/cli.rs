@@ -15,6 +15,7 @@ pub struct Cli {
 pub enum CommandAction {
     Append { text: String },
     Print { count: usize },
+    AppendFromStdin,
 }
 
 impl Cli {
@@ -31,10 +32,29 @@ impl Cli {
             return Ok((cli, CommandAction::Print { count }));
         }
         if cli.note.is_empty() {
-            return Err(clap::Error::raw(
-                ErrorKind::MissingRequiredArgument,
-                "supply note text or use --print",
-            ));
+            // If no note text provided, allow capturing from stdin when stdin is not a TTY.
+            #[cfg(feature = "capture-stdin-check")] // placeholder feature gate if needed later
+            {}
+            #[allow(deprecated)]
+            {
+                #[cfg(feature = "force_old_behavior")]
+                {
+                    return Err(clap::Error::raw(
+                        ErrorKind::MissingRequiredArgument,
+                        "supply note text or use --print",
+                    ));
+                }
+            }
+            // Use std::io::IsTerminal (stable) to detect interactive terminal.
+            use std::io::IsTerminal;
+            if std::io::stdin().is_terminal() {
+                return Err(clap::Error::raw(
+                    ErrorKind::MissingRequiredArgument,
+                    "supply note text or use --print",
+                ));
+            } else {
+                return Ok((cli, CommandAction::AppendFromStdin));
+            }
         }
         let text = cli.note.join(" ").trim().to_string();
         if text.is_empty() {

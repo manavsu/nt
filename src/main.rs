@@ -62,5 +62,28 @@ fn main() {
                 }
             }
         }
+        CommandAction::AppendFromStdin => {
+            use std::io::Read;
+            let mut buf = String::new();
+            if let Err(e) = std::io::stdin().read_to_string(&mut buf) {
+                eprintln!("stdin read error: {e}");
+                std::process::exit(1);
+            }
+            let text_raw = buf.trim_end_matches(['\n', '\r'].as_ref());
+            if text_raw.trim().is_empty() {
+                eprintln!("note text cannot be empty");
+                std::process::exit(2);
+            }
+            let clock = SystemClock;
+            if let Err(e) = append_note_line_to_file_with_clock(
+                &cfg.expanded_note_file_path,
+                &clock,
+                &cfg.datetime_format_pattern,
+                text_raw,
+            ) {
+                eprintln!("write error: {e}");
+                std::process::exit(1);
+            }
+        }
     }
 }
