@@ -1,35 +1,35 @@
-use std::io::{Cursor};
+use std::io::Cursor;
 
-use nt::notes::{append_note, tail_lines};
+use nt::notes::{append_note_line_to_writer, collect_last_n_lines_from_reader};
 
 #[test]
-fn append_note_writes_single_line_with_trailing_newline() {
+fn append_note_line_to_writer_writes_timestamp_space_text_newline() {
     let mut buf = Vec::new();
-    append_note(&mut buf, "12:00", "Lunch time").unwrap();
+    append_note_line_to_writer(&mut buf, "12:00", "Lunch time").unwrap();
     let s = String::from_utf8(buf).unwrap();
     assert_eq!(s, "12:00 Lunch time\n");
 }
 
 #[test]
-fn tail_lines_returns_last_n_in_order() {
+fn collect_last_n_lines_from_reader_returns_last_two_lines_in_order() {
     let data = b"a\nb\nc\nd\n";
     let cursor = Cursor::new(data);
-    let lines = tail_lines(cursor, 2).unwrap();
+    let lines = collect_last_n_lines_from_reader(cursor, 2).unwrap();
     assert_eq!(lines, vec!["c", "d"]);
 }
 
 #[test]
-fn tail_lines_zero_count_returns_empty() {
+fn collect_last_n_lines_from_reader_zero_returns_empty_vec() {
     let data = b"a\nb\n";
     let cursor = Cursor::new(data);
-    let lines = tail_lines(cursor, 0).unwrap();
+    let lines = collect_last_n_lines_from_reader(cursor, 0).unwrap();
     assert!(lines.is_empty());
 }
 
 #[test]
-fn tail_lines_handles_fewer_lines_than_requested() {
+fn collect_last_n_lines_from_reader_with_fewer_available_returns_existing_lines() {
     let data = b"only\n";
     let cursor = Cursor::new(data);
-    let lines = tail_lines(cursor, 5).unwrap();
+    let lines = collect_last_n_lines_from_reader(cursor, 5).unwrap();
     assert_eq!(lines, vec!["only"]);
 }
