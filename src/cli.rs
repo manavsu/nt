@@ -1,4 +1,4 @@
-use clap::{Parser, ArgAction, error::ErrorKind};
+use clap::{ArgAction, Parser, error::ErrorKind};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -6,8 +6,6 @@ use std::path::PathBuf;
 pub struct Cli {
     #[arg(short='p', long="print", num_args=0..=1, value_name="N", default_missing_value="10")]
     pub print: Option<Option<usize>>,
-    #[arg(long = "config-file", value_name = "PATH", help = "use an explicit config file path instead of the default")]
-    pub config_file: Option<PathBuf>,
     #[arg(long = "config-path", help = "print the default config file path and exit", action = ArgAction::SetTrue)]
     pub show_config_path: bool,
     #[arg(short = 'i', long = "interactive", action = ArgAction::SetTrue, help = "enter interactive single-line mode (press Enter to submit)")]
@@ -25,20 +23,20 @@ pub enum CommandAction {
 }
 
 impl Cli {
-    pub fn parse_action() -> Result<(Self, CommandAction), clap::Error> {
+    pub fn parse_action() -> Result<CommandAction, clap::Error> {
         let cli = Cli::parse();
         // Handle explicit interactive flag first
         if cli.show_config_path {
-            if cli.config_file.is_some() || cli.print.is_some() || cli.interactive || !cli.note.is_empty() {
+            if cli.print.is_some() || cli.interactive || !cli.note.is_empty() {
                 return Err(clap::Error::raw(
                     ErrorKind::ArgumentConflict,
                     "--config-path cannot be combined with other options or note text",
                 ));
             }
-            return Ok((cli, CommandAction::ShowConfigPath));
+            return Ok(CommandAction::ShowConfigPath);
         }
         if cli.interactive {
-            if let Some(_) = &cli.print {
+            if cli.print.is_some() {
                 return Err(clap::Error::raw(
                     ErrorKind::ArgumentConflict,
                     "cannot mix --interactive with --print/-p",
@@ -50,7 +48,7 @@ impl Cli {
                     "cannot supply note text with --interactive",
                 ));
             }
-            return Ok((cli, CommandAction::InteractiveAppend));
+            return Ok(CommandAction::InteractiveAppend);
         }
         if let Some(opt) = &cli.print {
             if !cli.note.is_empty() {
@@ -60,16 +58,16 @@ impl Cli {
                 ));
             }
             let count = opt.unwrap_or(10);
-            return Ok((cli, CommandAction::Print { count }));
+            return Ok(CommandAction::Print { count });
         }
         if cli.note.is_empty() {
             // If no note text provided, allow capturing from stdin when stdin is not a TTY.
             use std::io::IsTerminal;
             if std::io::stdin().is_terminal() {
                 // Automatic interactive mode (no args, stdin is TTY)
-                return Ok((cli, CommandAction::InteractiveAppend));
+                return Ok(CommandAction::InteractiveAppend);
             } else {
-                return Ok((cli, CommandAction::AppendFromStdin));
+                return Ok(CommandAction::AppendFromStdin);
             }
         }
         let text = cli.note.join(" ").trim().to_string();
@@ -79,6 +77,6 @@ impl Cli {
                 "note text cannot be empty",
             ));
         }
-        Ok((cli, CommandAction::Append { text }))
+        Ok(CommandAction::Append { text })
     }
 }

@@ -3,48 +3,33 @@ use nt::config::RuntimeConfig;
 use nt::interactive::{InteractiveOutcome, run_interactive_session};
 use nt::notes::append_note_line_to_file_with_clock;
 use nt::time::SystemClock;
-use std::io::Read;
 
 fn main() {
-    let parsed = Cli::parse_action();
-    let (cli, action) = match parsed {
+    let action = match Cli::parse_action() {
         Ok(v) => v,
         Err(e) => {
             let _ = e.print();
             std::process::exit(2);
         }
     };
-    let cfg = if let Some(custom) = cli.config_file.as_ref() {
-        match RuntimeConfig::load_from_path(custom) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("config load error: {e}");
-                std::process::exit(1);
-            }
-        }
-    } else {
-        match RuntimeConfig::load_or_default() {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("config load error: {e}");
-                std::process::exit(1);
-            }
+    let cfg = match RuntimeConfig::load_or_default() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("config load error: {e}");
+            std::process::exit(1);
         }
     };
 
     match action {
-        CommandAction::ShowConfigPath => {
-            match nt::config::default_config_file_path() {
-                Ok(p) => {
-                    println!("{}", p.display());
-                    return; // exit success
-                }
-                Err(e) => {
-                    eprintln!("config path resolve error: {e}");
-                    std::process::exit(1);
-                }
+        CommandAction::ShowConfigPath => match nt::config::default_config_file_path() {
+            Ok(p) => {
+                println!("{}", p.display());
             }
-        }
+            Err(e) => {
+                eprintln!("config path resolve error: {e}");
+                std::process::exit(1);
+            }
+        },
         CommandAction::Append { text } => {
             let clock = SystemClock;
             if let Err(e) = append_note_line_to_file_with_clock(
@@ -88,8 +73,12 @@ fn main() {
                 match line_result {
                     Ok(mut line) => {
                         // Strip any trailing carriage return (Windows pipes) but preserve other trailing spaces
-                        if line.ends_with('\r') { line.pop(); }
-                        if line.trim().is_empty() { continue; }
+                        if line.ends_with('\r') {
+                            line.pop();
+                        }
+                        if line.trim().is_empty() {
+                            continue;
+                        }
                         if let Err(e) = append_note_line_to_file_with_clock(
                             &cfg.expanded_note_file_path,
                             &clock,
