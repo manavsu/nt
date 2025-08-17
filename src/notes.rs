@@ -3,6 +3,8 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
 
+use crate::time::Clock;
+
 pub fn append_note_line_to_file(path: &Path, timestamp: &str, text: &str) -> io::Result<()> {
     if let Some(parent) = path.parent() {
         if !parent.as_os_str().is_empty() {
@@ -12,6 +14,16 @@ pub fn append_note_line_to_file(path: &Path, timestamp: &str, text: &str) -> io:
     let file = OpenOptions::new().create(true).append(true).open(path)?;
     let mut buf_writer = BufWriter::new(file);
     append_note_line_to_writer(&mut buf_writer, timestamp, text)
+}
+
+pub fn append_note_line_to_file_with_clock<C: Clock>(
+    path: &Path,
+    clock: &C,
+    pattern: &str,
+    text: &str,
+) -> io::Result<()> {
+    let ts = clock.now_formatted(pattern);
+    append_note_line_to_file(path, &ts, text)
 }
 
 pub fn collect_last_n_lines_from_file(path: &Path, count: usize) -> io::Result<Vec<String>> {

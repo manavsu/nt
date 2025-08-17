@@ -86,11 +86,15 @@ impl RuntimeConfig {
 
     pub fn load_or_default() -> Result<Self, ConfigLoadSaveError> {
         let config_file_path = default_config_file_path()?;
-        if !config_file_path.exists() {
+        Self::load_from_path(&config_file_path)
+    }
+
+    pub fn load_from_path(path: &Path) -> Result<Self, ConfigLoadSaveError> {
+        if !path.exists() {
             return Ok(RuntimeConfig::default());
         }
         let mut file_contents = String::new();
-        fs::File::open(config_file_path)?.read_to_string(&mut file_contents)?;
+        fs::File::open(path)?.read_to_string(&mut file_contents)?;
         let parsed: TomlConfig = toml::from_str(&file_contents)?;
         Self::from_parsed_toml(parsed)
     }
