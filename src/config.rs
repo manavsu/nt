@@ -38,12 +38,12 @@ pub struct RuntimeConfig {
     pub datetime_format_pattern: String,
 }
 
-pub fn resolve_default_config_directory() -> Option<PathBuf> {
+pub fn default_config_directory() -> Option<PathBuf> {
     dirs::config_dir().map(|base| base.join("nt"))
 }
 
-pub fn resolve_default_config_file_path() -> Result<PathBuf, ConfigLoadSaveError> {
-    Ok(resolve_default_config_directory()
+pub fn default_config_file_path() -> Result<PathBuf, ConfigLoadSaveError> {
+    Ok(default_config_directory()
         .ok_or(ConfigLoadSaveError::MissingHomeDirectory)?
         .join(CONFIG_FILE_NAME))
 }
@@ -70,8 +70,30 @@ impl Default for RuntimeConfig {
 }
 
 impl RuntimeConfig {
+    pub fn from_parts(
+        note_file_literal: String,
+        datetime_format_pattern: String,
+        home_directory: &Path,
+        create_parent_dir: bool,
+    ) -> Result<Self, ConfigLoadSaveError> {
+        let expanded_note_file_path =
+            expand_leading_tilde_literal(&note_file_literal, home_directory);
+        if create_parent_dir {
+            if let Some(parent_directory) = expanded_note_file_path.parent() {
+                if !parent_directory.as_os_str().is_empty() {
+                    fs::create_dir_all(parent_directory)?;
+                }
+            }
+        }
+        Ok(RuntimeConfig {
+            configured_note_file_literal: note_file_literal,
+            expanded_note_file_path,
+            datetime_format_pattern,
+        })
+    }
+
     pub fn load_or_default() -> Result<Self, ConfigLoadSaveError> {
-        let config_file_path = resolve_default_config_file_path()?;
+        let config_file_path = default_config_file_path()?;
         if !config_file_path.exists() {
             return Ok(RuntimeConfig::default());
         }
@@ -81,19 +103,19 @@ impl RuntimeConfig {
         Self::from_parsed_toml(parsed)
     }
 
-    pub fn persist(&self) -> Result<(), ConfigLoadSaveError> {
-        let destination_path = resolve_default_config_file_path()?;
+    pub fn save(&self) -> Result<(), ConfigLoadSaveError> {
+        let destination_path = default_config_file_path()?;
         if let Some(parent_directory) = destination_path.parent() {
             fs::create_dir_all(parent_directory)?;
         }
-        let serialized_toml = serialize_runtime_config_diff(self)?;
+        let serialized_toml = serialize_diff_from_default(self)?;
         fs::write(destination_path, serialized_toml)?;
         Ok(())
     }
 
     fn from_parsed_toml(parsed: TomlConfig) -> Result<Self, ConfigLoadSaveError> {
         let home_directory = dirs::home_dir().ok_or(ConfigLoadSaveError::MissingHomeDirectory)?;
-        Ok(runtime_config_from_parts(
+        RuntimeConfig::from_parts(
             parsed
                 .note_file
                 .unwrap_or_else(|| DEFAULT_NOTE_FILE_LITERAL.to_string()),
@@ -102,51 +124,11 @@ impl RuntimeConfig {
                 .unwrap_or_else(|| DEFAULT_DATETIME_FORMAT_PATTERN.to_string()),
             &home_directory,
             true,
-        )?)
+        )
     }
 }
 
-pub fn runtime_config_from_parts(
-    note_file_literal: String,
-    datetime_format_pattern: String,
-    home_directory: &Path,
-    create_parent_dir: bool,
-) -> Result<RuntimeConfig, ConfigLoadSaveError> {
-    let expanded_note_file_path = expand_leading_tilde_literal(&note_file_literal, home_directory);
-    if create_parent_dir {
-        if let Some(parent_directory) = expanded_note_file_path.parent() {
-            if !parent_directory.as_os_str().is_empty() {
-                fs::create_dir_all(parent_directory)?;
-            }
-        }
-    }
-    Ok(RuntimeConfig {
-        configured_note_file_literal: note_file_literal,
-        expanded_note_file_path,
-        datetime_format_pattern,
-    })
-}
-
-pub fn parse_toml_without_fs(
-    toml_str: &str,
-    home_directory: &Path,
-) -> Result<RuntimeConfig, ConfigLoadSaveError> {
-    let parsed: TomlConfig = toml::from_str(toml_str)?;
-    runtime_config_from_parts(
-        parsed
-            .note_file
-            .unwrap_or_else(|| DEFAULT_NOTE_FILE_LITERAL.to_string()),
-        parsed
-            .datetime_format
-            .unwrap_or_else(|| DEFAULT_DATETIME_FORMAT_PATTERN.to_string()),
-        home_directory,
-        false,
-    )
-}
-
-pub fn serialize_runtime_config_diff(
-    cfg: &RuntimeConfig,
-) -> Result<String, ConfigLoadSaveError> {
+pub fn serialize_diff_from_default(cfg: &RuntimeConfig) -> Result<String, ConfigLoadSaveError> {
     let mut toml_config = TomlConfig::default();
     if cfg.configured_note_file_literal != DEFAULT_NOTE_FILE_LITERAL {
         toml_config.note_file = Some(cfg.configured_note_file_literal.clone());
@@ -156,4 +138,3 @@ pub fn serialize_runtime_config_diff(
     }
     Ok(toml::to_string_pretty(&toml_config)?)
 }
-
