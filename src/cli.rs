@@ -1,5 +1,4 @@
 use clap::{ArgAction, Parser, error::ErrorKind};
-use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(name = "nt", about = "Simple timestamped note taker", version, author)]

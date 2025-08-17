@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use nt::config::{
     DEFAULT_DATETIME_FORMAT_PATTERN, DEFAULT_NOTE_FILE_LITERAL, RuntimeConfig,
-    expand_leading_tilde_literal, serialize_diff_from_default, default_config_file_path,
+    default_config_file_path, expand_leading_tilde_literal, serialize_diff_from_default,
 };
 
 fn fake_home() -> PathBuf {

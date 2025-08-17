@@ -23,11 +23,16 @@ pub fn run_interactive_session<C: Clock, R: BufRead, W: Write>(
         writer.flush()?;
     }
     let bytes = reader.read_line(&mut line_buf)?;
-    if bytes == 0 { // EOF immediately
+    if bytes == 0 {
+        // EOF immediately
         return Ok(InteractiveOutcome::Empty);
     }
-    if line_buf.ends_with('\n') { line_buf.pop(); }
-    if line_buf.ends_with('\r') { line_buf.pop(); }
+    if line_buf.ends_with('\n') {
+        line_buf.pop();
+    }
+    if line_buf.ends_with('\r') {
+        line_buf.pop();
+    }
     if line_buf.trim().is_empty() {
         return Ok(InteractiveOutcome::Empty);
     }
