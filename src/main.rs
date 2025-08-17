@@ -1,6 +1,6 @@
 use nt::cli::{Cli, CommandAction};
 use nt::config::RuntimeConfig;
-use nt::notes::{append_note_line_to_file_with_clock, collect_last_n_lines_from_file};
+use nt::notes::append_note_line_to_file_with_clock;
 use nt::time::SystemClock;
 
 fn main() {
@@ -43,18 +43,18 @@ fn main() {
                 std::process::exit(1);
             }
         }
-        CommandAction::Print { count } => match collect_last_n_lines_from_file(
-            &cfg.expanded_note_file_path,
-            count,
-        ) {
-            Ok(lines) => {
-                for l in lines {
-                    println!("{l}");
+        CommandAction::Print { count } => {
+            match nt::notes::collect_last_n_lines_from_file_allow_missing(&cfg.expanded_note_file_path, count) {
+                Ok(Some(lines)) => {
+                    for l in lines { println!("{l}"); }
                 }
-            }
-            Err(e) => {
-                eprintln!("read error: {e}");
-                std::process::exit(1);
+                Ok(None) => {
+                    println!("no notes have been made");
+                }
+                Err(e) => {
+                    eprintln!("read error: {e}");
+                    std::process::exit(1);
+                }
             }
         },
     }

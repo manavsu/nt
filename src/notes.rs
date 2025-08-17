@@ -32,6 +32,18 @@ pub fn collect_last_n_lines_from_file(path: &Path, count: usize) -> io::Result<V
     collect_last_n_lines_from_reader(reader, count)
 }
 
+/// Attempts to collect the last N lines, but returns Ok(None) if the file does not exist.
+pub fn collect_last_n_lines_from_file_allow_missing(
+    path: &Path,
+    count: usize,
+) -> io::Result<Option<Vec<String>>> {
+    match collect_last_n_lines_from_file(path, count) {
+        Ok(lines) => Ok(Some(lines)),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
 pub fn collect_last_n_lines_from_reader<R: BufRead>(
     reader: R,
     count: usize,
