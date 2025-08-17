@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub const DEFAULT_NOTE_FILE_LITERAL: &str = "~/daybook.txt";
-pub const DEFAULT_DATETIME_FORMAT_PATTERN: &str = "%H:%M - %-m/%-d/%y";
+pub const DEFAULT_DATETIME_FORMAT_PATTERN: &str = "%Y-%m-%d %H:%M";
 pub const CONFIG_FILE_NAME: &str = "nt.toml";
 
 #[derive(Debug, Error)]
