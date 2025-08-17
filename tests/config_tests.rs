@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use nt::config::{
     DEFAULT_DATETIME_FORMAT_PATTERN, DEFAULT_NOTE_FILE_LITERAL, RuntimeConfig,
-    expand_leading_tilde_literal, serialize_diff_from_default,
+    expand_leading_tilde_literal, serialize_diff_from_default, default_config_file_path,
 };
 
 fn fake_home() -> PathBuf {
@@ -49,7 +49,7 @@ fn creates_default_runtime_config_when_toml_is_empty() {
 #[test]
 fn parses_custom_note_file_and_datetime_format_and_expands_tilde() {
     let toml = r#"note_file = "~/notes/log.txt"
-datetime_format = "%Y-%m-%d""#;
+ datetime_format = "%Y-%m-%d""#;
     let cfg = build_runtime_config_from_test_toml_manual_parse(toml);
     assert_eq!(cfg.configured_note_file_literal, "~/notes/log.txt");
     assert_eq!(cfg.datetime_format_pattern, "%Y-%m-%d");
@@ -130,4 +130,11 @@ fn leaves_relative_path_unchanged() {
 fn leaves_absolute_path_unchanged() {
     let expanded = expand_leading_tilde_literal("/var/log/syslog", &home());
     assert_eq!(expanded, PathBuf::from("/var/log/syslog"));
+}
+
+#[test]
+fn default_config_path_print_matches_helper() {
+    let path = default_config_file_path().expect("path");
+    // Just ensure it ends with CONFIG_FILE_NAME
+    assert!(path.ends_with("nt.toml"));
 }

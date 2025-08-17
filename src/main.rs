@@ -14,7 +14,7 @@ fn main() {
             std::process::exit(2);
         }
     };
-    let cfg = if let Some(custom) = cli.config_path.as_ref() {
+    let cfg = if let Some(custom) = cli.config_file.as_ref() {
         match RuntimeConfig::load_from_path(custom) {
             Ok(c) => c,
             Err(e) => {
@@ -33,6 +33,18 @@ fn main() {
     };
 
     match action {
+        CommandAction::ShowConfigPath => {
+            match nt::config::default_config_file_path() {
+                Ok(p) => {
+                    println!("{}", p.display());
+                    return; // exit success
+                }
+                Err(e) => {
+                    eprintln!("config path resolve error: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
         CommandAction::Append { text } => {
             let clock = SystemClock;
             if let Err(e) = append_note_line_to_file_with_clock(

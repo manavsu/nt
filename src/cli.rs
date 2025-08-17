@@ -6,8 +6,10 @@ use std::path::PathBuf;
 pub struct Cli {
     #[arg(short='p', long="print", num_args=0..=1, value_name="N", default_missing_value="10")]
     pub print: Option<Option<usize>>,
-    #[arg(long = "config-path", value_name = "PATH")]
-    pub config_path: Option<PathBuf>,
+    #[arg(long = "config-file", value_name = "PATH", help = "use an explicit config file path instead of the default")]
+    pub config_file: Option<PathBuf>,
+    #[arg(long = "config-path", help = "print the default config file path and exit", action = ArgAction::SetTrue)]
+    pub show_config_path: bool,
     #[arg(short = 'i', long = "interactive", action = ArgAction::SetTrue, help = "enter interactive single-line mode (press Enter to submit)")]
     pub interactive: bool,
     #[arg(value_name = "NOTE", trailing_var_arg = true)]
@@ -19,12 +21,22 @@ pub enum CommandAction {
     Print { count: usize },
     AppendFromStdin,
     InteractiveAppend,
+    ShowConfigPath,
 }
 
 impl Cli {
     pub fn parse_action() -> Result<(Self, CommandAction), clap::Error> {
         let cli = Cli::parse();
         // Handle explicit interactive flag first
+        if cli.show_config_path {
+            if cli.config_file.is_some() || cli.print.is_some() || cli.interactive || !cli.note.is_empty() {
+                return Err(clap::Error::raw(
+                    ErrorKind::ArgumentConflict,
+                    "--config-path cannot be combined with other options or note text",
+                ));
+            }
+            return Ok((cli, CommandAction::ShowConfigPath));
+        }
         if cli.interactive {
             if let Some(_) = &cli.print {
                 return Err(clap::Error::raw(
@@ -52,19 +64,6 @@ impl Cli {
         }
         if cli.note.is_empty() {
             // If no note text provided, allow capturing from stdin when stdin is not a TTY.
-            #[cfg(feature = "capture-stdin-check")] // placeholder feature gate if needed later
-            {}
-            #[allow(deprecated)]
-            {
-                #[cfg(feature = "force_old_behavior")]
-                {
-                    return Err(clap::Error::raw(
-                        ErrorKind::MissingRequiredArgument,
-                        "supply note text or use --print",
-                    ));
-                }
-            }
-            // Use std::io::IsTerminal (stable) to detect interactive terminal.
             use std::io::IsTerminal;
             if std::io::stdin().is_terminal() {
                 // Automatic interactive mode (no args, stdin is TTY)

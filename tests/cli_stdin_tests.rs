@@ -18,7 +18,7 @@ fn append_from_stdin_multiline_creates_two_separate_notes() {
     let (_cfg_handle, cfg_path) = temp_config(&note_file_path);
 
     let mut child = Command::new(env!("CARGO_BIN_EXE_nt"))
-        .arg("--config-path")
+        .arg("--config-file")
         .arg(&cfg_path)
         .stdin(Stdio::piped())
         .spawn()
@@ -32,7 +32,7 @@ fn append_from_stdin_multiline_creates_two_separate_notes() {
 
     // Now print last lines. Expect at least two lines and both entries separately present.
     let output = Command::new(env!("CARGO_BIN_EXE_nt"))
-        .arg("--config-path")
+        .arg("--config-file")
         .arg(&cfg_path)
         .arg("--print")
         .arg("5")
@@ -57,7 +57,7 @@ fn append_from_stdin_whitespace_only_errors() { // unchanged behavior
     let (_cfg_handle, cfg_path) = temp_config(&note_file_path);
 
     let mut child = Command::new(env!("CARGO_BIN_EXE_nt"))
-        .arg("--config-path")
+        .arg("--config-file")
         .arg(&cfg_path)
         .stdin(Stdio::piped())
         .spawn()
@@ -77,7 +77,7 @@ fn append_from_stdin_reports_added_count() {
     let (_cfg_handle, cfg_path) = temp_config(&note_file_path);
 
     let mut child = Command::new(env!("CARGO_BIN_EXE_nt"))
-        .arg("--config-path")
+        .arg("--config-file")
         .arg(&cfg_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -93,7 +93,7 @@ fn append_from_stdin_reports_added_count() {
     assert!(stdout.contains("added 3 notes"), "stdout missing plural summary: {stdout}");
 
     let print_out = Command::new(env!("CARGO_BIN_EXE_nt"))
-        .arg("--config-path")
+        .arg("--config-file")
         .arg(&cfg_path)
         .arg("--print")
         .arg("10")

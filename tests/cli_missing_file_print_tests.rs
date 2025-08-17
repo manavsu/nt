@@ -12,7 +12,7 @@ fn print_when_file_missing_shows_friendly_message() {
     assert!(!note_file_path.exists(), "note file should not exist yet");
 
     let output = Command::new(env!("CARGO_BIN_EXE_nt"))
-        .arg("--config-path")
+        .arg("--config-file")
         .arg(config_path.as_os_str())
         .arg("--print")
         .output()
